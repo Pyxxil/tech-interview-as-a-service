@@ -18,7 +18,7 @@ impl Service {
 
             then {
                 return match service.to_ascii_lowercase().as_str() {
-                    "fizzbuzz" => FizzBuzz::from_params(url.query()).map(Service::FizzBuzz),
+                    "fizzbuzz" => FizzBuzz::create(url.query()).map(Service::FizzBuzz),
                     _ => Ok(Service::NotFound)
                 };
             }
