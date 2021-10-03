@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use worker::*;
+use worker::{Response, Result};
 
 use crate::utils::min_max;
 
@@ -44,7 +44,7 @@ impl FizzBuzz {
     ///
     /// Run the service.
     ///
-    /// For FizzBuzz, this will not even bother to complete the request if the difference
+    /// For `FizzBuzz`, this will not even bother to complete the request if the difference
     /// between the two is higher than the `CAP` so as to not timeout the request (and also
     /// to reduce the memory footprint).
     ///
@@ -54,43 +54,42 @@ impl FizzBuzz {
         let (from, to) = min_max(self.from, self.to);
 
         if to - from > CAP {
-            return Response::error(
+            Response::error(
                 "The difference between 'to' and 'from' must be no greater than 1000",
                 400,
-            );
+            )
+        } else {
+            let values = (from..(to + if self.inclusive { 1 } else { 0 }))
+                .into_iter()
+                .map(|a| {
+                    if a % 15 == 0 {
+                        format!("{}{}", self.fizz, self.buzz)
+                    } else if a % 5 == 0 {
+                        self.buzz.clone()
+                    } else if a % 3 == 0 {
+                        self.fizz.clone()
+                    } else {
+                        a.to_string()
+                    }
+                })
+                .collect::<Vec<String>>();
+
+            Response::from_json(&json!({ "values": values }))
         }
-
-        let values = (from..(to + if self.inclusive { 1 } else { 0 }))
-            .into_iter()
-            .map(|a| {
-                if a % 15 == 0 {
-                    format!("{}{}", self.fizz, self.buzz)
-                } else if a % 5 == 0 {
-                    self.buzz.clone()
-                } else if a % 3 == 0 {
-                    self.fizz.clone()
-                } else {
-                    a.to_string()
-                }
-            })
-            .collect::<Vec<String>>();
-
-        Response::from_json(&json!({ "values": values }))
     }
 
     ///
-    /// Create this service based on the query provided in the url. If the query does not exist,
+    /// Create this service from the query provided in the url. If the query does not exist,
     /// then respond with a help string.
     ///
-    pub fn create(query: Option<&str>) -> std::result::Result<FizzBuzz, Response> {
-        if let Some(query) = query {
-            let fizz = serde_urlencoded::from_str(query)
-                .map_err(|err| FizzBuzz::help(Some((err.to_string(), 400))))?;
-
-            Ok(fizz)
-        } else {
-            Err(FizzBuzz::help(None))
-        }
+    pub fn from(query: Option<&str>) -> std::result::Result<FizzBuzz, Response> {
+        query.map_or_else(
+            || Err(FizzBuzz::help(None)),
+            |query| {
+                serde_urlencoded::from_str(query)
+                    .map_err(|err| FizzBuzz::help(Some((err.to_string(), 400))))
+            },
+        )
     }
 
     fn help(status: Option<(String, u16)>) -> Response {

@@ -1,4 +1,4 @@
-use worker::*;
+use worker::{Response, Result};
 
 use crate::service::fizzbuzz::FizzBuzz;
 
@@ -11,14 +11,15 @@ pub enum Service {
 }
 
 impl Service {
-    pub fn new(url: url::Url) -> std::result::Result<Service, Response> {
+    pub fn from(url: Result<url::Url>) -> std::result::Result<Service, Response> {
         if_chain! {
+            if let Ok(url) = url;
             if let Some(mut path) = url.path_segments();
             if let Some(service) = path.next();
 
             then {
                 return match service.to_ascii_lowercase().as_str() {
-                    "fizzbuzz" => FizzBuzz::create(url.query()).map(Service::FizzBuzz),
+                    "fizzbuzz" => FizzBuzz::from(url.query()).map(Service::FizzBuzz),
                     _ => Ok(Service::NotFound)
                 };
             }
