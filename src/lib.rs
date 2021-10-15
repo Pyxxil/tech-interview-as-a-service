@@ -19,6 +19,9 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
     utils::set_panic_hook();
 
     Router::new()
+        .get_async("/*request", |ctx, _| async move {
+            Service::help(ctx).await.map_or_else(Ok, Service::response)
+        })
         .post_async("/*request", |ctx, _| async move {
             Service::from(ctx).await.map_or_else(Ok, Service::response)
         })

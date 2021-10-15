@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use worker::{console_log, Response, Result};
+use worker::{Response, Result};
 
 mod algorithm;
 use algorithm::Algorithm;
@@ -78,9 +78,9 @@ impl Sort {
                 serde_urlencoded::from_str::<Sort>(query)
                     .map_err(|err| Sort::help(Some((err.to_string(), 400))))
                     .and_then(|mut sort| {
-                        body.and_then(|body| {
+                        body.map(|body| {
                             sort.data = body;
-                            Ok(sort)
+                            sort
                         })
                         .map_err(|err| Sort::help(Some((err.to_string(), 400))))
                     })
@@ -88,8 +88,7 @@ impl Sort {
         )
     }
 
-    fn help(status: Option<(String, u16)>) -> Response {
-        console_log!("{:#?}", Sort::default());
+    pub fn help(status: Option<(String, u16)>) -> Response {
         let help = format!(
             "Help: Try appending the following to the url (without the quotes): '?{}'\n\nAnd send a JSON body that looks similar to: {}",
             serde_urlencoded::to_string(&Sort::default()).unwrap(),
@@ -97,7 +96,11 @@ impl Sort {
         );
 
         if let Some((err, status)) = status {
-            Response::error(format!("{}\n\n{}", err, help), status).unwrap()
+            if status >= 400 {
+                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
+            } else {
+                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
+            }
         } else {
             Response::ok(help).unwrap()
         }

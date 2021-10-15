@@ -28,11 +28,9 @@ impl Algorithm {
                 loop {
                     let mut final_index = 0;
 
-                    (1..length.clone()).for_each(|idx| {
+                    (1..length).for_each(|idx| {
                         if list[idx - 1] > list[idx] {
-                            let temp = list[idx - 1];
-                            list[idx - 1] = list[idx];
-                            list[idx] = temp;
+                            list.swap(idx - 1, idx);
 
                             steps.push(list.clone());
                             final_index = idx;
@@ -50,32 +48,32 @@ impl Algorithm {
             }
 
             Algorithm::Merge => {
-                fn merge(l: Vec<i64>, r: Vec<i64>, steps: &mut Vec<Vec<i64>>) -> Vec<i64> {
+                fn merge<'a>(l: &'a [i64], r: &'a [i64], steps: &mut Vec<Vec<i64>>) -> Vec<i64> {
                     let mut merged = Vec::new();
 
-                    let (mut lidx, mut ridx) = (0, 0);
+                    let (mut left_idx, mut right_idx) = (0, 0);
 
-                    while lidx < l.len() && ridx < r.len() {
-                        if l[lidx] <= r[ridx] {
-                            merged.push(l[lidx]);
-                            lidx += 1;
+                    while left_idx < l.len() && right_idx < r.len() {
+                        if l[left_idx] <= r[right_idx] {
+                            merged.push(l[left_idx]);
+                            left_idx += 1;
                         } else {
-                            merged.push(r[ridx]);
-                            ridx += 1;
+                            merged.push(r[right_idx]);
+                            right_idx += 1;
                         }
 
                         steps.push(merged.clone());
                     }
 
-                    while lidx < l.len() {
-                        merged.push(l[lidx]);
-                        lidx += 1;
+                    while left_idx < l.len() {
+                        merged.push(l[left_idx]);
+                        left_idx += 1;
                         steps.push(merged.clone());
                     }
 
-                    while ridx < r.len() {
-                        merged.push(r[ridx]);
-                        ridx += 1;
+                    while right_idx < r.len() {
+                        merged.push(r[right_idx]);
+                        right_idx += 1;
                         steps.push(merged.clone());
                     }
 
@@ -92,7 +90,7 @@ impl Algorithm {
                     steps.push(left.to_vec());
                     steps.push(right.to_vec());
 
-                    merge(merge_sort(left, steps), merge_sort(right, steps), steps)
+                    merge(&merge_sort(left, steps), &merge_sort(right, steps), steps)
                 }
 
                 let mut steps = Vec::new();

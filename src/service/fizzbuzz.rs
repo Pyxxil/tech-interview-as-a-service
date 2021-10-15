@@ -97,14 +97,18 @@ impl FizzBuzz {
         )
     }
 
-    fn help(status: Option<(String, u16)>) -> Response {
+    pub fn help(status: Option<(String, u16)>) -> Response {
         let help = format!(
             "Help: Try appending the following to the url (without the quotes): '?{}'",
             serde_urlencoded::to_string(&FizzBuzz::default()).unwrap()
         );
 
         if let Some((err, status)) = status {
-            Response::error(format!("{}\n\n{}", err, help), status).unwrap()
+            if status >= 400 {
+                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
+            } else {
+                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
+            }
         } else {
             Response::ok(help).unwrap()
         }
