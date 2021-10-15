@@ -4,6 +4,8 @@ use worker::{Response, Result};
 
 use crate::utils::min_max;
 
+pub const NAME: &str = "fizzbuzz";
+
 // We don't want this to timeout, so provide a soft cap
 const CAP: u64 = 1000;
 
@@ -55,7 +57,10 @@ impl FizzBuzz {
 
         if to - from > CAP {
             Response::error(
-                "The difference between 'to' and 'from' must be no greater than 1000",
+                format!(
+                    "The difference between 'to' and 'from' must be no greater than {}",
+                    CAP
+                ),
                 400,
             )
         } else {
@@ -94,7 +99,7 @@ impl FizzBuzz {
 
     fn help(status: Option<(String, u16)>) -> Response {
         let help = format!(
-            "Try appending the following to the url (without the quotes): '?{}'",
+            "Help: Try appending the following to the url (without the quotes): '?{}'",
             serde_urlencoded::to_string(&FizzBuzz::default()).unwrap()
         );
 
