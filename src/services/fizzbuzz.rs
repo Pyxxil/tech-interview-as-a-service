@@ -18,6 +18,13 @@ fn default_buzz() -> String {
     String::from("Buzz")
 }
 
+fn help_message() -> String {
+    format!(
+        "Help: Try sending a JSON body with the following: {}",
+        json!(FizzBuzz::default())
+    )
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FizzBuzz {
     #[serde(default)]
@@ -44,21 +51,12 @@ impl Default for FizzBuzz {
 }
 
 impl Service for FizzBuzz {
-    fn help(status: Option<(String, u16)>) -> Response {
-        let help = format!(
-            "Help: Try sending a JSON body with the following: {}",
-            json!(Self::default())
-        );
+    fn error(message: &str, status_code: u16) -> Result<Response> {
+        Response::error(format!("{}\n\n{}", message, help_message()), status_code)
+    }
 
-        if let Some((err, status)) = status {
-            if status >= 400 {
-                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
-            } else {
-                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
-            }
-        } else {
-            Response::ok(help).unwrap()
-        }
+    fn help() -> Result<Response> {
+        Response::ok(help_message())
     }
 
     ///

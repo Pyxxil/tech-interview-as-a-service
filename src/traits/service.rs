@@ -1,7 +1,9 @@
 use worker::{Response, Result};
 
 pub(crate) trait Service {
-    fn help(status: Option<(String, u16)>) -> Response
+    fn error(message: &str, status_code: u16) -> Result<Response>;
+
+    fn help() -> Result<Response>
     where
         Self: Sized;
 

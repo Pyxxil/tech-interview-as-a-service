@@ -63,14 +63,12 @@ impl Algorithm for SortingAlgorithm {
                 let mut steps = Vec::new();
 
                 for i in 0..list.len() {
-                    while i < list.len() {
-                        let mut j = i;
+                    let mut j = i;
 
-                        while j > 0 && list[j - 1] > list[j] {
-                            list.swap(j, j - 1);
-                            steps.push(json!(list));
-                            j -= 1;
-                        }
+                    while j > 0 && list[j - 1] > list[j] {
+                        list.swap(j, j - 1);
+                        steps.push(json!(list));
+                        j -= 1;
                     }
                 }
 

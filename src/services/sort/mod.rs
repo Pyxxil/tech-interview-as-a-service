@@ -14,10 +14,15 @@ pub const NAME: &str = "sort";
 // We don't want this to timeout, so provide a soft cap
 const CAP: u64 = 20;
 
+fn help_message() -> String {
+    format!(
+        "Help: Try sending a JSON body with the following:\n{}\n",
+        serde_json::to_string_pretty(&Sort::default()).unwrap()
+    )
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Sort {
-    #[serde(default)]
-    #[serde(skip_serializing)]
     values: Vec<i64>,
     #[serde(default)]
     algorithm: SortingAlgorithm,
@@ -33,21 +38,12 @@ impl Default for Sort {
 }
 
 impl Service for Sort {
-    fn help(status: Option<(String, u16)>) -> Response {
-        let help = format!(
-            "Help: Try sending a JSON body with the following: {}",
-            json!(Self::default())
-        );
+    fn error(message: &str, status_code: u16) -> Result<Response> {
+        Response::error(format!("{}\n\n{}", message, help_message()), status_code)
+    }
 
-        if let Some((err, status)) = status {
-            if status >= 400 {
-                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
-            } else {
-                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
-            }
-        } else {
-            Response::ok(help).unwrap()
-        }
+    fn help() -> Result<Response> {
+        Response::ok(help_message())
     }
 
     ///

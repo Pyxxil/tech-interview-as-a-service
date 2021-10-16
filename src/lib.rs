@@ -19,23 +19,23 @@ use crate::services::sort::{self, Sort};
 /// Serve the request
 ///
 async fn serve<T: Service + for<'de> Deserialize<'de>>(mut ctx: Request) -> Result<Response> {
-    if ctx.method() == Method::Post {
-        if ctx
-            .headers()
-            .get("Content-Type")
-            .contains(&Some(String::from("application/json")))
-        {
-            ctx.json()
-                .await
-                .map_or_else(|err| Ok(T::help(Some((err.to_string(), 400)))), T::response)
-        } else {
-            Ok(T::help(Some((
-                String::from("Invalid Content-Type header; Expected 'application/json'"),
-                415,
-            ))))
-        }
+    if ctx.method() != Method::Post {
+        return T::help();
+    }
+
+    if ctx
+        .headers()
+        .get("Content-Type")
+        .contains(&Some(String::from("application/json")))
+    {
+        ctx.json()
+            .await
+            .map_or_else(|err| T::error(&err.to_string(), 400), T::response)
     } else {
-        Ok(T::help(None))
+        T::error(
+            "Invalid Content-Type header; Expected 'application/json'",
+            415,
+        )
     }
 }
 
