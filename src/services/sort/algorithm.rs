@@ -1,28 +1,34 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+use crate::traits::Algorithm;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum Algorithm {
+pub enum SortingAlgorithm {
     Bubble,
     Merge,
     Insertion,
     Selection,
 }
 
-impl Default for Algorithm {
+impl Default for SortingAlgorithm {
     fn default() -> Self {
         Self::Bubble
     }
 }
 
-impl Algorithm {
-    pub fn run(&self, mut list: Vec<i64>) -> (Vec<i64>, Vec<Vec<i64>>) {
+impl Algorithm for SortingAlgorithm {
+    type Input = Vec<i64>;
+    type Output = (Vec<i64>, Vec<serde_json::Value>);
+
+    fn run(&self, mut list: Self::Input) -> Self::Output {
         if list.len() <= 1 {
             return (list, Vec::new());
         }
 
         match self {
-            Algorithm::Bubble => {
+            SortingAlgorithm::Bubble => {
                 let mut steps = Vec::new();
                 let mut length = list.len();
 
@@ -33,7 +39,7 @@ impl Algorithm {
                         if list[i - 1] > list[i] {
                             list.swap(i - 1, i);
 
-                            steps.push(list.clone());
+                            steps.push(json!(list.clone()));
                             final_index = i;
                         }
                     }
@@ -48,12 +54,12 @@ impl Algorithm {
                 (list, steps)
             }
 
-            Algorithm::Merge => {
+            SortingAlgorithm::Merge => {
                 let mut steps = Vec::new();
                 (merge_sort(&list, &mut steps), steps)
             }
 
-            Algorithm::Insertion => {
+            SortingAlgorithm::Insertion => {
                 let mut steps = Vec::new();
 
                 for i in 0..list.len() {
@@ -62,7 +68,7 @@ impl Algorithm {
 
                         while j > 0 && list[j - 1] > list[j] {
                             list.swap(j, j - 1);
-                            steps.push(list.clone());
+                            steps.push(json!(list));
                             j -= 1;
                         }
                     }
@@ -71,7 +77,7 @@ impl Algorithm {
                 (list, steps)
             }
 
-            Algorithm::Selection => {
+            SortingAlgorithm::Selection => {
                 let mut steps = Vec::new();
 
                 for left in 0..list.len() {
@@ -85,7 +91,7 @@ impl Algorithm {
 
                     if left != smallest {
                         list.swap(left, smallest);
-                        steps.push(list.clone());
+                        steps.push(json!(list));
                     }
                 }
 
@@ -93,9 +99,16 @@ impl Algorithm {
             }
         }
     }
+
+    fn step(&self) {
+        todo!()
+    }
 }
 
-fn merge<'a>(l: &'a [i64], r: &'a [i64], steps: &mut Vec<Vec<i64>>) -> Vec<i64> {
+///
+/// Perform the merging of the two lists for Merge Sort.
+///
+fn merge<'a>(l: &'a [i64], r: &'a [i64], steps: &mut Vec<serde_json::Value>) -> Vec<i64> {
     let mut merged = Vec::new();
 
     let (mut left_idx, mut right_idx) = (0, 0);
@@ -109,33 +122,33 @@ fn merge<'a>(l: &'a [i64], r: &'a [i64], steps: &mut Vec<Vec<i64>>) -> Vec<i64> 
             right_idx += 1;
         }
 
-        steps.push(merged.clone());
+        steps.push(json!(merged));
     }
 
     while left_idx < l.len() {
         merged.push(l[left_idx]);
         left_idx += 1;
-        steps.push(merged.clone());
+        steps.push(json!(merged));
     }
 
     while right_idx < r.len() {
         merged.push(r[right_idx]);
         right_idx += 1;
-        steps.push(merged.clone());
+        steps.push(json!(merged));
     }
 
     merged
 }
 
-fn merge_sort(m: &[i64], steps: &mut Vec<Vec<i64>>) -> Vec<i64> {
+fn merge_sort(m: &[i64], steps: &mut Vec<serde_json::Value>) -> Vec<i64> {
     if m.len() <= 1 {
         return m.to_vec();
     }
 
     let (left, right) = m.split_at(m.len() / 2);
 
-    steps.push(left.to_vec());
-    steps.push(right.to_vec());
+    steps.push(json!(left));
+    steps.push(json!(right));
 
     merge(&merge_sort(left, steps), &merge_sort(right, steps), steps)
 }

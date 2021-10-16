@@ -1,50 +1,56 @@
-#[macro_use]
-extern crate if_chain;
+#![feature(option_result_contains)]
 
+use serde::Deserialize;
 use worker::{
     event, wasm_bindgen, wasm_bindgen_futures, worker_sys, Env, Method, Request, Response, Result,
     Router,
 };
 
-mod service;
+mod services;
+mod traits;
 mod utils;
 
-use service::Service;
+use traits::Service;
 
-use crate::service::fizzbuzz::{self, FizzBuzz};
-use crate::service::sort::{self, Sort};
+use crate::services::fizzbuzz::{self, FizzBuzz};
+use crate::services::sort::{self, Sort};
 
-fn not_found() -> Result<Response> {
-    Response::error("Not found", 404)
+///
+/// Serve the request
+///
+async fn serve<T: Service + for<'de> Deserialize<'de>>(mut ctx: Request) -> Result<Response> {
+    if ctx.method() == Method::Post {
+        if ctx
+            .headers()
+            .get("Content-Type")
+            .contains(&Some(String::from("application/json")))
+        {
+            ctx.json()
+                .await
+                .map_or_else(|err| Ok(T::help(Some((err.to_string(), 400)))), T::response)
+        } else {
+            Ok(T::help(Some((
+                String::from("Invalid Content-Type header; Expected 'application/json'"),
+                415,
+            ))))
+        }
+    } else {
+        Ok(T::help(None))
+    }
 }
 
-async fn handle(mut ctx: Request) -> Result<Response> {
-    if_chain! {
-        if let Ok(url) = ctx.url();
-        if let Some(mut path) = url.path_segments();
-        if let Some(service) = path.next();
-        if let Some(query) = url.query();
+///
+/// Handle the request based on it's context.
+///
+///
+async fn handle(ctx: Request) -> Result<Response> {
+    let url = ctx.url().unwrap();
+    let service = url.path_segments().unwrap().next().unwrap();
 
-        then {
-            match (ctx.method(), service.to_ascii_lowercase().as_str()) {
-                (Method::Post, fizzbuzz::NAME) => FizzBuzz::create(None, query).map_or_else(Ok, Service::response),
-                (Method::Get, fizzbuzz::NAME) =>
-                    Ok(FizzBuzz::help(Some((
-                        "Try sending a POST request to this endpoint".to_string(),
-                        200,
-                    )))),
-
-                (Method::Post, sort::NAME) => Sort::create(Some(ctx.json().await), query).map_or_else(Ok, Service::response),
-                (Method::Get, sort::NAME) => Ok(Sort::help(Some((
-                    "Try sending a POST request to this endpoint".to_string(),
-                    200,
-                )))),
-
-                _ => not_found()
-            }
-        } else {
-            not_found()
-        }
+    match service.to_ascii_lowercase().as_str() {
+        fizzbuzz::NAME => serve::<FizzBuzz>(ctx).await,
+        sort::NAME => serve::<Sort>(ctx).await,
+        _ => unreachable!(),
     }
 }
 
@@ -56,9 +62,14 @@ async fn handle(mut ctx: Request) -> Result<Response> {
 pub async fn main(req: Request, env: Env) -> Result<Response> {
     utils::set_panic_hook();
 
-    Router::new()
-        .get_async("/*request", |ctx, _| async move { handle(ctx).await })
-        .post_async("/*request", |ctx, _| async move { handle(ctx).await })
+    [fizzbuzz::NAME, sort::NAME]
+        .iter()
+        .fold(Router::new(), |router, service| {
+            let service = format!("/{}", service);
+            router
+                .get_async(&service, |ctx, _| async move { handle(ctx).await })
+                .post_async(&service, |ctx, _| async move { handle(ctx).await })
+        })
         .run(req, env)
         .await
 }

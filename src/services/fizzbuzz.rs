@@ -43,16 +43,11 @@ impl Default for FizzBuzz {
     }
 }
 
-#[derive(Deserialize)]
-pub(crate) struct Empty;
-
 impl Service for FizzBuzz {
-    type Body = Empty;
-
     fn help(status: Option<(String, u16)>) -> Response {
         let help = format!(
-            "Help: Try appending the following to the url (without the quotes): '?{}'",
-            serde_urlencoded::to_string(&Self::default()).unwrap()
+            "Help: Try sending a JSON body with the following: {}",
+            json!(Self::default())
         );
 
         if let Some((err, status)) = status {
@@ -64,14 +59,6 @@ impl Service for FizzBuzz {
         } else {
             Response::ok(help).unwrap()
         }
-    }
-
-    fn create(
-        _body: Option<Result<Self::Body>>,
-        query: &str,
-    ) -> std::result::Result<Self, Response> {
-        serde_urlencoded::from_str(query)
-            .map_err(|err| FizzBuzz::help(Some((err.to_string(), 400))))
     }
 
     ///
