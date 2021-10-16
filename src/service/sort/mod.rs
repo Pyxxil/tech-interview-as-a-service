@@ -7,6 +7,8 @@ use worker::{Response, Result};
 mod algorithm;
 use algorithm::Algorithm;
 
+use crate::service::Service;
+
 pub const NAME: &str = "sort";
 
 // We don't want this to timeout, so provide a soft cap
@@ -43,52 +45,10 @@ impl Default for Sort {
     }
 }
 
-impl Sort {
-    ///
-    /// Run the service.
-    ///
-    /// For `Sort`, this will not even bother to complete the request if the number of
-    /// elements supplied is greater than `CAP` so as to night have Cloudflare workes
-    /// timeout (and also to reduce the memory footprint).
-    ///
-    pub fn run(self) -> Result<Response> {
-        if self.data.values.len() > CAP.try_into().unwrap() {
-            Response::error(
-                format!("The number of values must be fewer than {}", CAP),
-                400,
-            )
-        } else {
-            let (values, steps) = self.algorithm.run(self.data.values);
+impl Service for Sort {
+    type Body = Data;
 
-            Response::from_json(&json!({ "values": values, "steps": steps }))
-        }
-    }
-
-    ///
-    /// Create this service from the query provided in the url. If the query does not exist,
-    /// then respond with a help string.
-    ///
-    /// For Sorting, we also want to be provided the body as taking the array in via url params
-    /// wouldn't be that user friendly.
-    ///
-    pub fn from(body: Result<Data>, query: Option<&str>) -> std::result::Result<Sort, Response> {
-        query.map_or_else(
-            || Err(Sort::help(None)),
-            |query| {
-                serde_urlencoded::from_str::<Sort>(query)
-                    .map_err(|err| Sort::help(Some((err.to_string(), 400))))
-                    .and_then(|mut sort| {
-                        body.map(|body| {
-                            sort.data = body;
-                            sort
-                        })
-                        .map_err(|err| Sort::help(Some((err.to_string(), 400))))
-                    })
-            },
-        )
-    }
-
-    pub fn help(status: Option<(String, u16)>) -> Response {
+    fn help(status: Option<(String, u16)>) -> Response {
         let help = format!(
             "Help: Try appending the following to the url (without the quotes): '?{}'\n\nAnd send a JSON body that looks similar to: {}",
             serde_urlencoded::to_string(&Sort::default()).unwrap(),
@@ -103,6 +63,51 @@ impl Sort {
             }
         } else {
             Response::ok(help).unwrap()
+        }
+    }
+
+    ///
+    /// Create this service from the query provided in the url. If the query does not exist,
+    /// then respond with a help string.
+    ///
+    /// For Sorting, we also want to be provided the body as taking the array in via url params
+    /// wouldn't be that user friendly.
+    ///
+    fn create(
+        body: Option<Result<Self::Body>>,
+        query: &str,
+    ) -> std::result::Result<Self, Response> {
+        serde_urlencoded::from_str::<Sort>(query)
+            .map_err(|err| Sort::help(Some((err.to_string(), 400))))
+            .and_then(|mut sort| {
+                // We can unwrap this without checking because we control
+                // whether we're passed this or not
+                body.unwrap()
+                    .map(|body| {
+                        sort.data = body;
+                        sort
+                    })
+                    .map_err(|err| Sort::help(Some((err.to_string(), 400))))
+            })
+    }
+
+    ///
+    /// Run the service.
+    ///
+    /// For `Sort`, this will not even bother to complete the request if the number of
+    /// elements supplied is greater than `CAP` so as to night have Cloudflare workes
+    /// timeout (and also to reduce the memory footprint).
+    ///
+    fn response(self) -> Result<Response> {
+        if self.data.values.len() > CAP.try_into().unwrap() {
+            Response::error(
+                format!("The number of values must be fewer than {}", CAP),
+                400,
+            )
+        } else {
+            let (values, steps) = self.algorithm.run(self.data.values);
+
+            Response::from_json(&json!({ "values": values, "steps": steps }))
         }
     }
 }

@@ -3,6 +3,7 @@ use serde_json::json;
 use worker::{Response, Result};
 
 use crate::utils::min_max;
+use crate::Service;
 
 pub const NAME: &str = "fizzbuzz";
 
@@ -42,7 +43,37 @@ impl Default for FizzBuzz {
     }
 }
 
-impl FizzBuzz {
+#[derive(Deserialize)]
+pub(crate) struct Empty;
+
+impl Service for FizzBuzz {
+    type Body = Empty;
+
+    fn help(status: Option<(String, u16)>) -> Response {
+        let help = format!(
+            "Help: Try appending the following to the url (without the quotes): '?{}'",
+            serde_urlencoded::to_string(&Self::default()).unwrap()
+        );
+
+        if let Some((err, status)) = status {
+            if status >= 400 {
+                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
+            } else {
+                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
+            }
+        } else {
+            Response::ok(help).unwrap()
+        }
+    }
+
+    fn create(
+        _body: Option<Result<Self::Body>>,
+        query: &str,
+    ) -> std::result::Result<Self, Response> {
+        serde_urlencoded::from_str(query)
+            .map_err(|err| FizzBuzz::help(Some((err.to_string(), 400))))
+    }
+
     ///
     /// Run the service.
     ///
@@ -52,7 +83,7 @@ impl FizzBuzz {
     ///
     /// **TODO**: Have a cap on the length of the two strings that are generated
     ///
-    pub fn run(self) -> Result<Response> {
+    fn response(self) -> Result<Response> {
         let (from, to) = min_max(self.from, self.to);
 
         if to - from > CAP {
@@ -80,37 +111,6 @@ impl FizzBuzz {
                 .collect::<Vec<String>>();
 
             Response::from_json(&json!({ "values": values }))
-        }
-    }
-
-    ///
-    /// Create this service from the query provided in the url. If the query does not exist,
-    /// then respond with a help string.
-    ///
-    pub fn from(query: Option<&str>) -> std::result::Result<FizzBuzz, Response> {
-        query.map_or_else(
-            || Err(FizzBuzz::help(None)),
-            |query| {
-                serde_urlencoded::from_str(query)
-                    .map_err(|err| FizzBuzz::help(Some((err.to_string(), 400))))
-            },
-        )
-    }
-
-    pub fn help(status: Option<(String, u16)>) -> Response {
-        let help = format!(
-            "Help: Try appending the following to the url (without the quotes): '?{}'",
-            serde_urlencoded::to_string(&FizzBuzz::default()).unwrap()
-        );
-
-        if let Some((err, status)) = status {
-            if status >= 400 {
-                Response::error(format!("{}\n\n{}", err, help), status).unwrap()
-            } else {
-                Response::ok(format!("{}\n\n{}", err, help)).unwrap()
-            }
-        } else {
-            Response::ok(help).unwrap()
         }
     }
 }
