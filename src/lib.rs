@@ -1,4 +1,5 @@
 #![feature(option_result_contains)]
+#![feature(generic_associated_types)]
 
 use worker::{
     event, wasm_bindgen, wasm_bindgen_futures, worker_sys, Env, Request, Response, Result, Router,

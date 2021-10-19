@@ -29,7 +29,8 @@ pub(crate) async fn serve<T: Service + for<'de> Deserialize<'de>>(
     {
         ctx.json()
             .await
-            .map_or_else(|err| T::error(&err.to_string(), 400), T::response)
+            .map(T::response)
+            .unwrap_or_else(|err| T::error(&err.to_string(), 400))
     } else {
         T::error(
             "Invalid Content-Type header; Expected 'application/json'",
@@ -39,8 +40,8 @@ pub(crate) async fn serve<T: Service + for<'de> Deserialize<'de>>(
 }
 
 ///
-/// Handle the request based on it's context.
-///
+/// Transform the Request's URL into the actual service to deal with
+/// it, e.g. `${URL}/fizzbuzz` into a `Fizzbuzz` service.
 ///
 pub(crate) async fn handle(ctx: Request) -> Result<Response> {
     let url = ctx.url().unwrap();
