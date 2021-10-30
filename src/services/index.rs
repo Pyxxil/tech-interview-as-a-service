@@ -13,7 +13,7 @@ fn help_message() -> String {
             .iter()
             .filter(|service| !service.is_empty())
             .map(|service| format!("  /{}", service))
-            .collect::<Vec<String>>()
+            .collect::<Vec<_>>()
             .join("\n")
     )
 }

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use worker::{Response, Result};
 
+use crate::traits::Help;
 use crate::utils::min_max;
 use crate::Service;
 
@@ -16,13 +17,6 @@ fn default_fizz() -> String {
 
 fn default_buzz() -> String {
     String::from("Buzz")
-}
-
-fn help_message() -> String {
-    format!(
-        "Help: Try sending a JSON body with the following: {}",
-        json!(FizzBuzz::default())
-    )
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,11 +46,14 @@ impl Default for FizzBuzz {
 
 impl Service for FizzBuzz {
     fn error(message: &str, status_code: u16) -> Result<Response> {
-        Response::error(format!("{}\n\n{}", message, help_message()), status_code)
+        Response::error(
+            format!("{}\n\n{}", message, FizzBuzz::help_message()),
+            status_code,
+        )
     }
 
     fn help() -> Result<Response> {
-        Response::ok(help_message())
+        Response::ok(FizzBuzz::help_message())
     }
 
     ///

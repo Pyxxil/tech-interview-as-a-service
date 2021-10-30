@@ -2,19 +2,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use worker::{Response, Result};
 
-use crate::traits::{Algorithm, Service};
+use crate::traits::{Algorithm, Help, Service};
 
 pub const NAME: &str = "sort";
 
 // We don't want this to timeout, so provide a soft cap
 const CAP: usize = 20;
-
-fn help_message() -> String {
-    format!(
-        "Help: Try sending a JSON body with the following:\n{}\n",
-        serde_json::to_string_pretty(&Sort::default()).unwrap()
-    )
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -108,11 +101,14 @@ impl Sort {
 
 impl Service for Sort {
     fn error(message: &str, status_code: u16) -> Result<Response> {
-        Response::error(format!("{}\n\n{}", message, help_message()), status_code)
+        Response::error(
+            format!("{}\n\n{}", message, Sort::help_message()),
+            status_code,
+        )
     }
 
     fn help() -> Result<Response> {
-        Response::ok(help_message())
+        Response::ok(Sort::help_message())
     }
 
     ///
@@ -147,9 +143,10 @@ impl Algorithm for Sort {
             return (self.values, Vec::new());
         }
 
+        let mut steps = Vec::new();
+
         match self.algorithm {
             SortingAlgorithm::Bubble => {
-                let mut steps = Vec::new();
                 let mut length = self.values.len();
 
                 loop {
@@ -174,14 +171,9 @@ impl Algorithm for Sort {
                 (self.values.to_vec(), steps)
             }
 
-            SortingAlgorithm::Merge => {
-                let mut steps = Vec::new();
-                (self.merge_sort(&self.values, &mut steps), steps)
-            }
+            SortingAlgorithm::Merge => (self.merge_sort(&self.values, &mut steps), steps),
 
             SortingAlgorithm::Insertion => {
-                let mut steps = Vec::new();
-
                 for i in 0..self.values.len() {
                     let mut j = i;
 
@@ -196,8 +188,6 @@ impl Algorithm for Sort {
             }
 
             SortingAlgorithm::Selection => {
-                let mut steps = Vec::new();
-
                 for left in 0..self.values.len() {
                     let mut smallest = left;
 

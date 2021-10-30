@@ -15,14 +15,10 @@ pub const SERVICES: [&str; 3] = [fizzbuzz::NAME, sort::NAME, index::NAME];
 ///
 /// Serve the request
 ///
-pub(crate) async fn serve<T: Service + for<'de> Deserialize<'de>>(
-    mut ctx: Request,
-) -> Result<Response> {
+async fn serve<T: Service + for<'de> Deserialize<'de>>(mut ctx: Request) -> Result<Response> {
     if ctx.method() != Method::Post {
-        return T::help();
-    }
-
-    if ctx
+        T::help()
+    } else if ctx
         .headers()
         .get("Content-Type")
         .contains(&Some(String::from("application/json")))
@@ -51,6 +47,10 @@ pub(crate) async fn handle(ctx: Request) -> Result<Response> {
         fizzbuzz::NAME => serve::<FizzBuzz>(ctx).await,
         sort::NAME => serve::<Sort>(ctx).await,
         index::NAME => serve::<Index>(ctx).await,
-        _ => unreachable!(),
+
+        // This is handled by the `Router` class, such that the
+        // only time a string we don't handle above could be seen
+        // here is if a service has forgotten to be added.
+        _ => Response::error(format!("`{}` Not Found", service), 404),
     }
 }
