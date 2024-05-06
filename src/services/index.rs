@@ -4,15 +4,13 @@ use worker::{Response, Result};
 use crate::services::SERVICES;
 use crate::Service;
 
-pub const NAME: &str = "";
-
 fn help_message() -> String {
     format!(
         "Try one of the following endpoints:\n{}\n",
         SERVICES
             .iter()
             .filter(|service| !service.is_empty())
-            .map(|service| format!("  /{}", service))
+            .map(|service| format!("\t{service}"))
             .collect::<Vec<_>>()
             .join("\n")
     )
@@ -22,6 +20,8 @@ fn help_message() -> String {
 pub struct Index;
 
 impl Service for Index {
+    const NAME: &'static str = "";
+
     fn error(_message: &str, _status_code: u16) -> Result<Response> {
         Self::help()
     }

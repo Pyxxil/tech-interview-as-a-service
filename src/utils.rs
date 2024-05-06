@@ -14,7 +14,7 @@ cfg_if! {
 ///
 /// Retrieve the min and the max between two values
 ///
-pub(crate) fn min_max<T>(a: T, b: T) -> (T, T)
+pub fn min_max<T>(a: T, b: T) -> (T, T)
 where
     T: std::cmp::PartialOrd,
 {

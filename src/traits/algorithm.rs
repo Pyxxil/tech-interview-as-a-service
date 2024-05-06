@@ -1,4 +1,4 @@
-pub(crate) trait Algorithm {
+pub trait Algorithm {
     type Input;
     type Output;
     type Step;

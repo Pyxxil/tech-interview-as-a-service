@@ -6,3 +6,4 @@ pkg/
 .cargo-ok
 
 wrangler.toml
+.wrangler/

@@ -4,8 +4,6 @@ use worker::{Response, Result};
 
 use crate::traits::{Algorithm, Help, Service};
 
-pub const NAME: &str = "sort";
-
 // We don't want this to timeout, so provide a soft cap
 const CAP: usize = 20;
 
@@ -31,7 +29,7 @@ pub enum StepAction<'a, T: ?Sized> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Sort {
+pub struct Sort {
     values: Vec<i64>,
     #[serde(default)]
     algorithm: SortingAlgorithm,
@@ -100,28 +98,30 @@ impl Sort {
 }
 
 impl Service for Sort {
+    const NAME: &'static str = "sort";
+
     fn error(message: &str, status_code: u16) -> Result<Response> {
         Response::error(
-            format!("{}\n\n{}", message, Sort::help_message()),
+            format!("{message}\n\n{}", Self::help_message()),
             status_code,
         )
     }
 
     fn help() -> Result<Response> {
-        Response::ok(Sort::help_message())
+        Response::ok(Self::help_message())
     }
 
     ///
     /// Run the service.
     ///
     /// For `Sort`, this will not even bother to complete the request if the number of
-    /// elements supplied is greater than `CAP` so as to night have Cloudflare workes
+    /// elements supplied is greater than `CAP` so as to not have the Cloudflare worker
     /// timeout (and also to reduce the memory footprint).
     ///
     fn response(self) -> Result<Response> {
         if self.values.len() > CAP {
             Response::error(
-                format!("The number of values must be fewer than {}", CAP),
+                format!("The number of values must be fewer than {CAP}"),
                 400,
             )
         } else {
@@ -143,7 +143,7 @@ impl Algorithm for Sort {
             return (self.values, Vec::new());
         }
 
-        let mut steps = Vec::new();
+        let mut steps = Vec::with_capacity(self.values.len() / 2);
 
         match self.algorithm {
             SortingAlgorithm::Bubble => {
@@ -168,7 +168,7 @@ impl Algorithm for Sort {
                     }
                 }
 
-                (self.values.to_vec(), steps)
+                (self.values.clone(), steps)
             }
 
             SortingAlgorithm::Merge => (self.merge_sort(&self.values, &mut steps), steps),
@@ -184,7 +184,7 @@ impl Algorithm for Sort {
                     }
                 }
 
-                (self.values.to_vec(), steps)
+                (self.values.clone(), steps)
             }
 
             SortingAlgorithm::Selection => {
@@ -203,7 +203,7 @@ impl Algorithm for Sort {
                     }
                 }
 
-                (self.values.to_vec(), steps)
+                (self.values.clone(), steps)
             }
         }
     }
