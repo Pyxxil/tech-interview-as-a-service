@@ -14,8 +14,8 @@ default = ["console_error_panic_hook"]
 cfg-if = "1.0.0"
 const_format = "0.2.33"
 worker = "0.4.2"
-serde = "1.0.214"
-serde_json = "1.0.132"
+serde = "1.0.215"
+serde_json = "1.0.133"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
