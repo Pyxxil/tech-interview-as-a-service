@@ -1,13 +1,13 @@
-version: 2
+#version: 2
 
-updates:
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-    groups:
-      dependencies:
-        patterns:
-          - "*"
+#updates:
+#  - package-ecosystem: "cargo"
+#    directory: "/"
+#    schedule:
+#      interval: "weekly"
+#    labels:
+#      - "dependencies"
+#    groups:
+#      dependencies:
+#        patterns:
+#          - "*"
